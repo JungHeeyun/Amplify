@@ -10,8 +10,8 @@ import { notFound } from 'next/navigation'
 import { ReactNode } from 'react'
 
 export const metadata: Metadata = {
-  title: 'Breadit',
-  description: 'A Reddit clone built with Next.js and TypeScript.',
+  title: 'Amplify',
+  description: 'Ignite your ideas!',
 }
 
 const Layout = async ({
@@ -34,7 +34,7 @@ const Layout = async ({
       },
     },
   })
-
+  
   const subscription = !session?.user
     ? undefined
     : await db.subscription.findFirst({
@@ -60,6 +60,8 @@ const Layout = async ({
     },
   })
 
+  const showAdditionalInfo = subreddit.name !== 'Product' && subreddit.name !== 'Maker-Log';
+
   return (
     <div className='sm:container max-w-7xl mx-auto h-full pt-12'>
       <div>
@@ -70,31 +72,40 @@ const Layout = async ({
 
           {/* info sidebar */}
           <div className='overflow-hidden h-fit rounded-lg border border-gray-200 order-first md:order-last'>
-            <div className='px-6 py-4'>
-              <p className='font-semibold py-3'>About r/{subreddit.name}</p>
-            </div>
+          <div className='px-6 py-4'>
+            <p className='font-semibold py-3'>About {subreddit.name}</p>
+            {subreddit.name === 'Product' && (
+              <p className='py-2'>Product is a community for discussing and sharing products. Share your favorite products, discover new ones, and get feedback on your own products here.</p>
+            )}
+            {subreddit.name === 'Maker-Log' && (
+              <p className='py-2'>Maker-Log is a community for makers to share their daily logs. Share your progress, learn from others, and get inspired!</p>
+            )}
+          </div>
             <dl className='divide-y divide-gray-100 px-6 py-4 text-sm leading-6 bg-white'>
-              <div className='flex justify-between gap-x-4 py-3'>
-                <dt className='text-gray-500'>Created</dt>
-                <dd className='text-gray-700'>
-                  <time dateTime={subreddit.createdAt.toDateString()}>
-                    {format(subreddit.createdAt, 'MMMM d, yyyy')}
-                  </time>
-                </dd>
-              </div>
-              <div className='flex justify-between gap-x-4 py-3'>
-                <dt className='text-gray-500'>Members</dt>
-                <dd className='flex items-start gap-x-2'>
-                  <div className='text-gray-900'>{memberCount}</div>
-                </dd>
-              </div>
+              {showAdditionalInfo && (
+                <>
+                  <div className='flex justify-between gap-x-4 py-3'>
+                    <dt className='text-gray-500'>Created</dt>
+                    <dd className='text-gray-700'>
+                      <time dateTime={subreddit.createdAt.toDateString()}>
+                        {format(subreddit.createdAt, 'MMMM d, yyyy')}
+                      </time>
+                    </dd>
+                  </div>
+                  <div className='flex justify-between gap-x-4 py-3'>
+                    <dt className='text-gray-500'>Members</dt>
+                    <dd className='flex items-start gap-x-2'>
+                      <div className='text-gray-900'>{memberCount}</div>
+                    </dd>
+                  </div>
+                </>
+              )}
               {subreddit.creatorId === session?.user?.id ? (
                 <div className='flex justify-between gap-x-4 py-3'>
                   <dt className='text-gray-500'>You created this community</dt>
                 </div>
               ) : null}
-
-              {subreddit.creatorId !== session?.user?.id ? (
+              {showAdditionalInfo && subreddit.creatorId !== session?.user?.id ? (
                 <SubscribeLeaveToggle
                   isSubscribed={isSubscribed}
                   subredditId={subreddit.id}

@@ -39,18 +39,18 @@ const Post: FC<PostProps> = ({
           initialVote={_currentVote?.type}
         />
 
-        <div className='w-0 flex-1'>
-          <div className='max-h-40 mt-1 text-xs text-gray-500'>
-            {subredditName ? (
-              <>
-                <a
-                  className='underline text-zinc-900 text-sm underline-offset-2'
-                  href={`/r/${subredditName}`}>
-                  r/{subredditName}
-                </a>
-                <span className='px-1'>•</span>
-              </>
-            ) : null}
+      <div className='w-0 flex-1'>
+        <div className='max-h-40 mt-1 text-xs text-gray-500'>
+          {subredditName ? (
+            <>
+              <a
+                className='underline text-zinc-900 text-sm underline-offset-2'
+                href={`/r/${subredditName}`}>
+                {subredditName === "Product" || subredditName === "Maker-Log" ? subredditName : `Club/${subredditName}`}
+              </a>
+              <span className='px-1'>•</span>
+            </>
+          ) : null}
             <span>Posted by u/{post.author.username}</span>{' '}
             {formatTimeToNow(new Date(post.createdAt))}
           </div>

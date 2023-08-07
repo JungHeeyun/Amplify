@@ -11,20 +11,35 @@ export async function POST(req: Request) {
 
     const session = await getAuthSession()
 
+    // get subreddit details
+    const subreddit = await db.subreddit.findUnique({
+      where: {
+        id: subredditId,
+      },
+    })
+
     if (!session?.user) {
       return new Response('Unauthorized', { status: 401 })
     }
 
-    // verify user is subscribed to passed subreddit id
-    const subscription = await db.subscription.findFirst({
-      where: {
-        subredditId,
-        userId: session.user.id,
-      },
-    })
+    // If subreddit name is 'Product' or 'Maker-Log', user is automatically subscribed
+    if (subreddit.name === 'Product' || subreddit.name === 'Maker-Log') {
+      const existingSubscription = await db.subscription.findFirst({
+        where: {
+          subredditId,
+          userId: session.user.id,
+        },
+      })
 
-    if (!subscription) {
-      return new Response('Subscribe to post', { status: 403 })
+      if (!existingSubscription) {
+        // Automatically subscribe user to 'Product' or 'Maker-Log' subreddit
+        await db.subscription.create({
+          data: {
+            userId: session.user.id,
+            subredditId,
+          },
+        })
+      }
     }
 
     await db.post.create({
