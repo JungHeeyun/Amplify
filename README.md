@@ -79,3 +79,4 @@ and that's all you need to get started!
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
+# Amplify
