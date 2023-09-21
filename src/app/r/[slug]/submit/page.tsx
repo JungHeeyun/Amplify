@@ -1,7 +1,9 @@
 import { Editor } from '@/components/Editor'
+import { EditorProduct } from '@/components/EditorProduct'
 import { Button } from '@/components/ui/Button'
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
+
 
 interface pageProps {
   params: {
@@ -12,10 +14,10 @@ interface pageProps {
 const page = async ({ params }: pageProps) => {
   const subreddit = await db.subreddit.findFirst({
     where: {
-      name: params.slug,
+      name: decodeURIComponent(params.slug),
     },
   })
-
+  params.slug = decodeURIComponent(params.slug)
   if (!subreddit) return notFound()
 
   return (
@@ -27,13 +29,18 @@ const page = async ({ params }: pageProps) => {
             Create Post
           </h3>
           <p className='ml-2 mt-1 truncate text-sm text-gray-500'>
-            in r/{params.slug}
+            in {params.slug}
           </p>
         </div>
       </div>
 
       {/* form */}
-      <Editor subredditId={subreddit.id} />
+      {params.slug === 'Product' ? (
+        <EditorProduct subredditId={subreddit.id} />
+      ) : (
+        <Editor subredditId={subreddit.id} />
+      )}
+
 
       <div className='w-full flex justify-end'>
         <Button type='submit' className='w-full' form='subreddit-post-form'>

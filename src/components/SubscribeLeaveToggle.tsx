@@ -8,6 +8,7 @@ import { startTransition } from 'react'
 import { useToast } from '../hooks/use-toast'
 import { useCustomToasts } from '@/hooks/use-custom-toasts'
 
+
 interface SubscribeLeaveToggleProps {
   isSubscribed: boolean
   subredditId: string

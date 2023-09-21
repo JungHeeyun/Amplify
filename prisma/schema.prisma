@@ -68,6 +68,7 @@ model Subreddit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   posts     Post[]
+  iconImage String?
 
   creatorId   String?
   Creator     User?          @relation("CreatedBy", fields: [creatorId], references: [id])
@@ -97,6 +98,7 @@ model Post {
   subredditId String
   comments    Comment[] 
   votes       Vote[]
+  views       Int      @default(0) // 새로운 필드
 }
 
 model Comment {

@@ -13,9 +13,10 @@ import { useSession } from 'next-auth/react'
 interface PostFeedProps {
   initialPosts: ExtendedPost[]
   subredditName?: string
+  excludeSubreddits?: string[]  // New prop to accept list of subreddits to exclude
 }
 
-const PostFeed: FC<PostFeedProps> = ({ initialPosts, subredditName }) => {
+const PostFeed: FC<PostFeedProps> = ({ initialPosts, subredditName, excludeSubreddits = [] }) => {
   const lastPostRef = useRef<HTMLElement>(null)
   const { ref, entry } = useIntersection({
     root: lastPostRef.current,
@@ -48,7 +49,8 @@ const PostFeed: FC<PostFeedProps> = ({ initialPosts, subredditName }) => {
     }
   }, [entry, fetchNextPage])
 
-  const posts = data?.pages.flatMap((page) => page) ?? initialPosts
+  const posts = (data?.pages.flatMap((page) => page) ?? initialPosts)
+  .filter(post => post && post.subreddit && !excludeSubreddits.includes(post.subreddit.name));
 
   return (
     <ul className='flex flex-col col-span-2 space-y-6'>

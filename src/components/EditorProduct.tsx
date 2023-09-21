@@ -17,16 +17,29 @@ import axios from 'axios'
 import '@/styles/editor.css';
 import '@/styles/loading.css';
 
-
 type FormData = z.infer<typeof PostValidator>
 
 interface EditorProps {
   subredditId: string
 }
 
-export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
+export const EditorProduct: React.FC<EditorProps> = ({ subredditId }) => {
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleImageSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedImage(file)
+      // 이미지 미리보기 URL 생성
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
   const {
     register,
     handleSubmit,
@@ -131,6 +144,7 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
     }
   }, [])
 
+
   useEffect(() => {
     if (Object.keys(errors).length) {
       for (const [_key, value] of Object.entries(errors)) {
@@ -170,21 +184,39 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
   }, [isMounted, initializeEditor])
 
   async function onSubmit(data: FormData) {
+    if (!selectedImage) {
+      toast({
+        title: 'Image Required',
+        description: 'Please upload an Icon image before submitting.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const blocks = await ref.current?.save();
     setIsLoading(true);
   
-    // 최소한 1초 동안 로딩 화면이 보이도록 함
-    const loadingPromise = new Promise(resolve => setTimeout(resolve, 1000));
-    const blocks = await ref.current?.save();
-    const payload: PostCreationRequest = { title: data.title, content: blocks, subredditId };
-    const createPostPromise = createPost(payload);
-  
-    // 로딩 화면과 createPost 작업이 모두 완료될 때까지 대기
-    await Promise.all([loadingPromise, createPostPromise]);
-  
+    // 이미지가 선택되었을 경우, 맨 마지막에 추가합니다.
+    const [res] = await uploadFiles([selectedImage], 'imageUploader');
+    blocks?.blocks.push({
+      type: 'image',
+      data: {
+        file: {
+          url: res.fileUrl,
+        },
+      },
+    });
+
+    const payload: PostCreationRequest = {
+      title: data.title,
+      content: blocks,
+      subredditId,
+    };
+
+    createPost(payload);
     setIsLoading(false);
   }
   
-
   if (isLoading) {
     return (
       <div className="loading-screen">
@@ -193,12 +225,18 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
       </div>
     );
   }
-
+  
   if (!isMounted) {
     return null
   }
 
   const { ref: titleRef, ...rest } = register('title')
+
+  const clearImageSelection = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
 
   return (
     <div className='w-full p-4 bg-zinc-50 rounded-lg border border-zinc-200'>
@@ -209,12 +247,11 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
         <div className='prose prose-stone dark:prose-invert'>
           <TextareaAutosize
             ref={(e) => {
-              titleRef(e)
-              // @ts-ignore
-              _titleRef.current = e
+              titleRef(e);
+              _titleRef.current = e;
             }}
             {...rest}
-            placeholder='Title'
+            placeholder='Product Name'
             className='w-full resize-none appearance-none overflow-hidden bg-transparent text-5xl font-bold focus:outline-none'
           />
           <div id='editor' className='min-h-[500px]' />
@@ -225,8 +262,45 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
             </kbd>{' '}
             to open the command menu.
           </p>
+          <div className='my-4 relative'>
+            <input
+              type='file'
+              accept='image/*'
+              onChange={handleImageSelection}
+              className='hidden'
+              id='image-upload'
+            />
+            <label htmlFor='image-upload' className='cursor-pointer'>
+              <div className='w-48 h-48 rounded-lg border border-gray-300 flex items-center justify-center'>
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt='Preview'
+                    className='w-full h-full object-cover'
+                  />
+                ) : (
+                  <div className='text-gray-500 flex flex-col items-center justify-center'>
+                    <span className='text-5xl'>+</span>
+                    <span className='block text-sm'>
+                      Upload Product Icon
+                    </span>
+                  </div>
+                )}
+              </div>
+            </label>
+            {selectedImage && (
+              <div className='mt-2 flex items-center gap-2'>
+                <button
+                  type='button'
+                  onClick={clearImageSelection}
+                  className='px-10 py-1 rounded-md bg-red-600 text-white hover:bg-red-700'>
+                  Remove Image
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </form>
     </div>
-  )
-}
+  );
+};

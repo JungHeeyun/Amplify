@@ -21,10 +21,33 @@ const Layout = async ({
   children: ReactNode
   params: { slug: string }
 }) => {
+  // console.log('Current slug:', slug); // 콘솔 로그 추가
+  const decodedSlug = decodeURIComponent(slug);
+  // console.log('Decoded slug:', decodedSlug); // 디코딩된 slug 값 확인
+  
   const session = await getAuthSession()
+  const userId: string | undefined | null = session?.user?.id;
+  if (['Product', 'Maker-Log'].includes(decodedSlug) && userId) {
+    const existingSubscription = await db.subscription.findFirst({
+        where: {
+           subreddit: { name: decodedSlug },
+           user: { id: userId },
+        },
+    });
+
+    if (!existingSubscription) {
+        await db.subscription.create({
+           data: {
+              subreddit: { connect: { name: decodedSlug } },
+              user: { connect: { id: userId } },
+           },
+        });
+    }
+}
+
 
   const subreddit = await db.subreddit.findFirst({
-    where: { name: slug },
+    where: { name: decodedSlug },
     include: {
       posts: {
         include: {
@@ -40,7 +63,7 @@ const Layout = async ({
     : await db.subscription.findFirst({
         where: {
           subreddit: {
-            name: slug,
+            name: decodedSlug,
           },
           user: {
             id: session.user.id,
@@ -55,12 +78,13 @@ const Layout = async ({
   const memberCount = await db.subscription.count({
     where: {
       subreddit: {
-        name: slug,
+        name: decodedSlug,
       },
     },
   })
 
-  const showAdditionalInfo = subreddit.name !== 'Product' && subreddit.name !== 'Maker-Log';
+  const showAdditionalInfo = subreddit.name !== 'Product' && subreddit.name !== 'Maker-Log' && subreddit.name !== 'Community';
+  
 
   return (
     <div className='sm:container max-w-7xl mx-auto h-full pt-12'>
@@ -80,8 +104,11 @@ const Layout = async ({
             {subreddit.name === 'Maker-Log' && (
               <p className='py-2'>Maker-Log is a community for makers to share their daily logs. Share your progress, learn from others, and get inspired!</p>
             )}
+            {subreddit.name === 'Community' && (
+              <p className='py-2'> Community serves as a strategic platform for founders and investors to engage in meaningful dialogues about investment-worthy ventures.</p>
+            )}
           </div>
-            <dl className='divide-y divide-gray-100 px-6 py-4 text-sm leading-6 bg-white'>
+            <dl className={`divide-y divide-gray-100 px-6 py-4 text-sm leading-6 ${subreddit.name === 'Community' ? 'bg-transparent' : 'bg-white'}`}>
               {showAdditionalInfo && (
                 <>
                   <div className='flex justify-between gap-x-4 py-3'>
@@ -102,7 +129,7 @@ const Layout = async ({
               )}
               {subreddit.creatorId === session?.user?.id ? (
                 <div className='flex justify-between gap-x-4 py-3'>
-                  <dt className='text-gray-500'>You created this community</dt>
+                  <dt className='text-gray-500'>You created this Community</dt>
                 </div>
               ) : null}
               {showAdditionalInfo && subreddit.creatorId !== session?.user?.id ? (
@@ -112,14 +139,16 @@ const Layout = async ({
                   subredditName={subreddit.name}
                 />
               ) : null}
-              <Link
-                className={buttonVariants({
-                  variant: 'outline',
-                  className: 'w-full mb-6',
-                })}
-                href={`r/${slug}/submit`}>
-                Create Post
-              </Link>
+              { (isSubscribed || subreddit.name === 'Product' || subreddit.name === 'Maker-Log') && subreddit.name !== 'Community' && (
+                  <Link
+                      className={buttonVariants({
+                          variant: 'outline',
+                          className: 'w-full mb-6',
+                      })}
+                      href={`r/${slug}/submit`}>
+                      Create Post 
+                  </Link>
+              )}
             </dl>
           </div>
         </div>

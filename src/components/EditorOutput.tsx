@@ -11,7 +11,8 @@ const Output = dynamic(
 )
 
 interface EditorOutputProps {
-  content: any
+  content: any;
+  excludeLastBlock?: boolean; // 마지막 블록을 제외할지 여부를 나타내는 새로운 prop
 }
 
 const renderers = {
@@ -26,16 +27,20 @@ const style = {
   },
 }
 
-const EditorOutput: FC<EditorOutputProps> = ({ content }) => {
+const EditorOutput: FC<EditorOutputProps> = ({ content, excludeLastBlock = false }) => {
+  const blocksToRender = excludeLastBlock
+    ? content.blocks.slice(0, -1)
+    : content.blocks;
+
   return (
-    // @ts-expect-error
     <Output
       style={style}
       className='text-sm'
       renderers={renderers}
-      data={content}
+      data={{ blocks: blocksToRender }}
     />
-  )
-}
+  );
+};
+
 
 export default EditorOutput

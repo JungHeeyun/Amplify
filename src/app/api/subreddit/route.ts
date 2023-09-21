@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { name } = SubredditValidator.parse(body)
+    const { name, iconImage } = SubredditValidator.parse(body)
 
     // check if subreddit already exists
     const subredditExists = await db.subreddit.findFirst({
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
     const subreddit = await db.subreddit.create({
       data: {
         name,
+        iconImage, // if it's optional it will be `undefined` when not provided
         creatorId: session.user.id,
       },
     })
@@ -48,5 +49,16 @@ export async function POST(req: Request) {
     }
 
     return new Response('Could not create subreddit', { status: 500 })
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    const subreddit = await db.subreddit.findMany();
+    return new Response(JSON.stringify(subreddit), {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response('Could not fetch subreddits', { status: 500 })
   }
 }

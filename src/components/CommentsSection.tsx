@@ -18,10 +18,23 @@ type ReplyComment = Comment & {
 interface CommentsSectionProps {
   postId: string
   comments: ExtendedComment[]
+  views: number; // 조회수 추가
 }
 
 const CommentsSection = async ({ postId }: CommentsSectionProps) => {
   const session = await getAuthSession()
+
+  // DB에서 해당 포스트의 조회수 가져오기
+  const post = await db.post.findUnique({
+    where: {
+      id: postId,
+    },
+    select: {
+      views: true, // 조회수만 선택
+    },
+  })
+  const views = post?.views ?? 0; // 조회수 저장
+
 
   const comments = await db.comment.findMany({
     where: {
@@ -44,9 +57,14 @@ const CommentsSection = async ({ postId }: CommentsSectionProps) => {
   return (
     <div className='flex flex-col gap-y-4 mt-4'>
       <hr className='w-full h-px my-6' />
-
+      
+      <div className='flex items-center'>
+        <span className='text-gray-500 text-sm'>Views: </span>
+        <span className='text-gray-700 text-sm'>{views}</span>
+      </div>
+  
       <CreateComment postId={postId} />
-
+  
       <div className='flex flex-col gap-y-6 mt-4'>
         {comments
           .filter((comment) => !comment.replyToId)
@@ -59,11 +77,11 @@ const CommentsSection = async ({ postId }: CommentsSectionProps) => {
               },
               0
             )
-
+  
             const topLevelCommentVote = topLevelComment.votes.find(
               (vote) => vote.userId === session?.user.id
             )
-
+  
             return (
               <div key={topLevelComment.id} className='flex flex-col'>
                 <div className='mb-2'>
@@ -74,7 +92,7 @@ const CommentsSection = async ({ postId }: CommentsSectionProps) => {
                     postId={postId}
                   />
                 </div>
-
+  
                 {/* Render replies */}
                 {topLevelComment.replies
                   .sort((a, b) => b.votes.length - a.votes.length) // Sort replies by most liked
@@ -84,11 +102,11 @@ const CommentsSection = async ({ postId }: CommentsSectionProps) => {
                       if (vote.type === 'DOWN') return acc - 1
                       return acc
                     }, 0)
-
+  
                     const replyVote = reply.votes.find(
                       (vote) => vote.userId === session?.user.id
                     )
-
+  
                     return (
                       <div
                         key={reply.id}
@@ -107,7 +125,7 @@ const CommentsSection = async ({ postId }: CommentsSectionProps) => {
           })}
       </div>
     </div>
-  )
+  )  
 }
 
 export default CommentsSection
